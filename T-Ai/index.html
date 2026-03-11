@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>T-Ai 1.0</title>
+  <link rel="icon" href="icon.png" type="image/png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #0f0f0f;
+      --bg2:       #161616;
+      --bg3:       #1e1e1e;
+      --bg4:       #252525;
+      --border:    rgba(255,255,255,0.07);
+      --text:      #e8e8e8;
+      --text2:     #888;
+      --text3:     #555;
+      --accent:    #7c6af7;
+      --accent2:   #6253d4;
+      --accent-rgb:124,106,247;
+      --green:     #22c55e;
+      --red:       #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      font-family: 'Inter', system-ui, sans-serif;
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ═══ SIDEBAR ═══ */
+    #sidebar {
+      width: 240px; min-width: 240px;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      transition: width .25s ease, min-width .25s ease, opacity .2s;
+      overflow: hidden; flex-shrink: 0;
+    }
+    #sidebar.collapsed { width: 0; min-width: 0; opacity: 0; pointer-events: none; border: none; }
+    .sidebar-inner { min-width: 240px; display: flex; flex-direction: column; height: 100%; }
+
+    .sidebar-head {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+    }
+    .brand-icon {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent), #4f3fbf);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; color: #fff;
+      box-shadow: 0 0 14px rgba(var(--accent-rgb),.35);
+    }
+    .brand-name { font-size: 15px; font-weight: 700; letter-spacing: -.3px; }
+    .brand-ver  { font-size: 10px; color: var(--accent); font-weight: 600; letter-spacing: .5px; margin-top: 1px; }
+
+    .new-chat {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 8px 12px; border-radius: 8px;
+      background: rgba(var(--accent-rgb),.1); border: 1px solid rgba(var(--accent-rgb),.2);
+      color: var(--accent); font-size: 13px; font-weight: 500; font-family: inherit;
+      cursor: pointer; transition: background .15s;
+    }
+    .new-chat:hover { background: rgba(var(--accent-rgb),.18); }
+
+    .sidebar-section { padding: 10px 16px 4px; font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: .8px; text-transform: uppercase; }
+
+    .history { flex: 1; overflow-y: auto; padding: 4px 10px 10px; scrollbar-width: thin; scrollbar-color: #333 transparent; }
+    .h-item {
+      padding: 7px 10px; border-radius: 7px; font-size: 12.5px;
+      color: var(--text2); cursor: pointer; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; transition: background .1s, color .1s;
+    }
+    .h-item:hover { background: var(--bg3); color: var(--text); }
+    .h-item.active { background: rgba(var(--accent-rgb),.12); color: var(--accent); }
+
+    /* Status modello locale */
+    .sidebar-status {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .status-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 8px;
+      background: var(--bg3); font-size: 12px; color: var(--text2);
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot.online  { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+    .status-dot.offline { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* ═══ MAIN ═══ */
+    #main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; }
+
+    /* TOPBAR */
+    #topbar {
+      height: 52px; display: flex; align-items: center;
+      justify-content: space-between; padding: 0 16px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 8px; }
+    .topbar-right { display: flex; align-items: center; gap: 6px; }
+
+    .icon-btn {
+      width: 32px; height: 32px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      border: none; background: none; color: var(--text2);
+      cursor: pointer; transition: background .15s, color .15s; font-family: inherit;
+    }
+    .icon-btn:hover { background: var(--bg3); color: var(--text); }
+
+    .topbar-model {
+      display: flex; align-items: center; gap: 7px;
+      padding: 5px 12px; border-radius: 8px;
+      background: var(--bg3); border: 1px solid var(--border);
+      font-size: 13px; font-weight: 600; color: var(--text);
+    }
+    .topbar-model .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 6px rgba(var(--accent-rgb),.6);
+      animation: pulse 2s infinite;
+    }
+
+    /* API PANEL */
+    #api-panel {
+      display: none; position: absolute; top: 56px; right: 12px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; width: 290px;
+      z-index: 200; box-shadow: 0 12px 32px rgba(0,0,0,.6);
+    }
+    #api-panel.open { display: block; }
+    #api-panel h4 { font-size: 11px; font-weight: 600; color: var(--text2); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 12px; }
+    .api-row { margin-bottom: 10px; }
+    .api-row label { font-size: 11px; color: var(--text2); display: block; margin-bottom: 5px; }
+    .api-row input {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 7px; padding: 8px 11px; color: var(--text);
+      font-size: 12px; font-family: monospace;
+    }
+    .api-row input:focus { outline: none; border-color: var(--accent); }
+
+    /* MESSAGES */
+    #messages { flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #2a2a2a transparent; }
+    #messages::-webkit-scrollbar { width: 4px; }
+    #messages::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+
+    #msgs-inner { max-width: 720px; margin: 0 auto; padding: 28px 20px 0; display: flex; flex-direction: column; }
+
+    /* Welcome */
+    #welcome {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 55vh; gap: 14px; padding-bottom: 40px;
+    }
+    .welcome-icon {
+      width: 64px; height: 64px; border-radius: 18px;
+      background: linear-gradient(135deg, var(--accent), #4f3fbf);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 800; color: #fff;
+      box-shadow: 0 0 32px rgba(var(--accent-rgb),.3);
+      margin-bottom: 4px;
+    }
+    .welcome-title { font-size: 24px; font-weight: 700; letter-spacing: -.5px; }
+    .welcome-sub { font-size: 13px; color: var(--text2); }
+    .welcome-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 20px;
+      background: rgba(var(--accent-rgb),.1); border: 1px solid rgba(var(--accent-rgb),.2);
+      font-size: 11px; font-weight: 600; color: var(--accent); letter-spacing: .3px;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 520px; margin-top: 6px; }
+    .chip {
+      padding: 8px 14px; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; font-size: 12.5px; color: var(--text2);
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .chip:hover { background: var(--bg4); color: var(--text); border-color: rgba(var(--accent-rgb),.3); }
+
+    /* Rows */
+    .msg-row { padding: 18px 0; display: flex; flex-direction: column; gap: 6px; animation: fi .2s ease; }
+    .msg-row + .msg-row { border-top: 1px solid var(--border); }
+    @keyframes fi { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+    .msg-hd { display: flex; align-items: center; gap: 9px; }
+    .msg-av {
+      width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700;
+    }
+    .msg-av.user   { background: transparent; overflow: hidden; }
+    .msg-av.tai    { background: linear-gradient(135deg, var(--accent), #4f3fbf); color: #fff; }
+    .msg-nm        { font-size: 13px; font-weight: 600; }
+    .msg-model-tag {
+      font-size: 10px; padding: 1px 6px; border-radius: 4px;
+      background: rgba(var(--accent-rgb),.12); color: var(--accent);
+      font-weight: 500; margin-left: 2px;
+    }
+    .msg-body { padding-left: 35px; font-size: 14.5px; line-height: 1.78; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+
+    /* Typing */
+    #typing { display: none; padding: 18px 0; }
+    #typing.on { display: flex; flex-direction: column; gap: 6px; }
+    .typing-dots { padding-left: 35px; display: flex; gap: 4px; }
+    .td { width: 6px; height: 6px; border-radius: 50%; background: var(--text2); animation: td 1.4s infinite ease-in-out; }
+    .td:nth-child(2) { animation-delay: .2s; }
+    .td:nth-child(3) { animation-delay: .4s; }
+    @keyframes td { 0%,60%,100%{transform:scale(1);opacity:.3} 30%{transform:scale(1.4);opacity:1} }
+
+    /* INPUT */
+    #input-area { padding: 10px 20px 18px; flex-shrink: 0; }
+    #input-wrap { max-width: 720px; margin: 0 auto; }
+    #input-box {
+      display: flex; align-items: flex-end; gap: 8px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 14px; padding: 10px 10px 10px 16px;
+      transition: border-color .2s;
+    }
+    #input-box:focus-within { border-color: rgba(var(--accent-rgb),.4); }
+    #msg-input {
+      flex: 1; background: none; border: none; resize: none;
+      font-family: inherit; font-size: 14px; line-height: 1.6;
+      color: var(--text); max-height: 180px; overflow-y: auto;
+      padding: 2px 0; caret-color: var(--accent); scrollbar-width: thin;
+    }
+    #msg-input:focus { outline: none; }
+    #msg-input::placeholder { color: var(--text3); }
+    #send-btn {
+      width: 34px; height: 34px; border-radius: 8px; border: none;
+      background: var(--accent); color: #fff; cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, transform .1s, opacity .15s;
+    }
+    #send-btn:hover:not(:disabled) { background: var(--accent2); }
+    #send-btn:active:not(:disabled) { transform: scale(.92); }
+    #send-btn:disabled { opacity: .2; cursor: not-allowed; }
+    #footer-note { text-align: center; margin-top: 8px; font-size: 10.5px; color: var(--text3); }
+
+    /* Mode toggle (locale vs API) */
+    .mode-tabs {
+      display: flex; gap: 2px; background: var(--bg3);
+      border: 1px solid var(--border); border-radius: 8px; padding: 3px;
+    }
+    .mode-tab {
+      padding: 4px 12px; border-radius: 5px; font-size: 12px; font-weight: 500;
+      font-family: inherit; border: none; background: none; color: var(--text2);
+      cursor: pointer; transition: background .15s, color .15s;
+    }
+    .mode-tab.active { background: rgba(var(--accent-rgb),.2); color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sidebar-inner">
+    <div class="sidebar-head">
+      <div class="brand">
+        <div class="brand-icon">T</div>
+        <div>
+          <div class="brand-name">T-Ai</div>
+          <div class="brand-ver">MODEL 1.0</div>
+        </div>
+      </div>
+      <button class="new-chat" onclick="newChat()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Nuova conversazione
+      </button>
+    </div>
+
+    <div class="sidebar-section">Cronologia</div>
+    <div class="history" id="history">
+      <div class="h-item active">Chat corrente</div>
+    </div>
+
+    <div class="sidebar-status">
+      <div class="status-row">
+        <div class="status-dot online" id="status-dot"></div>
+        <span id="status-text">T-Ai 1.0 — in esecuzione</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div class="topbar-left">
+      <button class="icon-btn" onclick="toggleSidebar()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>
+        </svg>
+      </button>
+      <div class="topbar-model">
+        <div class="dot"></div>
+        T-Ai 1.0
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <!-- Toggle locale / cloud -->
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tab-local"  onclick="setMode('local')">🖥 Locale</button>
+        <button class="mode-tab"        id="tab-cloud"  onclick="setMode('cloud')">☁ Cloud</button>
+      </div>
+      <button class="icon-btn" onclick="toggleApiPanel()" title="API Keys">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- API PANEL -->
+  <div id="api-panel">
+    <h4>⚙ Configurazione API</h4>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:12px;">
+      In modalità <b style="color:var(--text)">Cloud</b> puoi usare Claude, GPT o Gemini.<br>
+      In modalità <b style="color:var(--text)">Locale</b> usa T-Ai 1.0 (server Python locale).
+    </div>
+    <div class="api-row">
+      <label>🖥 Server locale (URL)</label>
+      <input type="text" id="local-url" value="http://localhost:5000" />
+    </div>
+    <div class="api-row">
+      <label>🟢 Anthropic — Claude</label>
+      <input type="password" id="key-claude" placeholder="sk-ant-api03-..." />
+    </div>
+    <div class="api-row">
+      <label>⚪ OpenAI — GPT-4o</label>
+      <input type="password" id="key-gpt" placeholder="sk-..." />
+    </div>
+    <div class="api-row">
+      <label>🔵 Google — Gemini</label>
+      <input type="password" id="key-gemini" placeholder="AIzaSy..." />
+    </div>
+  </div>
+
+  <!-- MESSAGES -->
+  <div id="messages">
+    <div id="msgs-inner">
+
+      <div id="welcome">
+        <div class="welcome-icon">T</div>
+        <div class="welcome-badge">
+          <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
+          T-Ai Model 1.0
+        </div>
+        <div class="welcome-title">Come posso aiutarti?</div>
+        <div class="welcome-sub">Il tuo modello AI locale è pronto.</div>
+        <div class="chips">
+          <button class="chip" onclick="suggest(this)">Chi sei?</button>
+          <button class="chip" onclick="suggest(this)">Cosa sai fare?</button>
+          <button class="chip" onclick="suggest(this)">Spiegami il machine learning</button>
+          <button class="chip" onclick="suggest(this)">Raccontami una barzelletta</button>
+        </div>
+      </div>
+
+      <!-- Typing -->
+      <div id="typing">
+        <div class="msg-hd">
+          <div class="msg-av tai">T</div>
+          <span class="msg-nm">T-Ai <span class="msg-model-tag">1.0</span></span>
+        </div>
+        <div class="typing-dots">
+          <div class="td"></div><div class="td"></div><div class="td"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INPUT -->
+  <div id="input-area">
+    <div id="input-wrap">
+      <div id="input-box">
+        <textarea id="msg-input" rows="1"
+          placeholder="Scrivi a T-Ai 1.0..."
+          oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+        <button id="send-btn" onclick="send()" disabled>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+      <div id="footer-note">T-Ai 1.0 è un modello sperimentale. Le risposte potrebbero non essere sempre accurate.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ─── STATE ───────────────────────────────────────────────
+  let history  = [];
+  let busy     = false;
+  let mode     = 'local';   // 'local' | 'cloud'
+  let cloudKey = 'claude';  // quale API cloud usare
+
+  const msgsInner = document.getElementById('msgs-inner');
+  const welcome   = document.getElementById('welcome');
+  const typing    = document.getElementById('typing');
+  const input     = document.getElementById('msg-input');
+  const sendBtn   = document.getElementById('send-btn');
+  const messagesEl= document.getElementById('messages');
+
+  input.addEventListener('input', () => { sendBtn.disabled = !input.value.trim() || busy; });
+
+  // ─── SIDEBAR ─────────────────────────────────────────────
+  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+
+  // ─── API PANEL ────────────────────────────────────────────
+  function toggleApiPanel() { document.getElementById('api-panel').classList.toggle('open'); }
+  document.addEventListener('click', e => {
+    const p = document.getElementById('api-panel');
+    if (p.classList.contains('open') && !p.contains(e.target) && !e.target.closest('.icon-btn'))
+      p.classList.remove('open');
+  });
+
+  // ─── MODE ─────────────────────────────────────────────────
+  function setMode(m) {
+    mode = m;
+    document.getElementById('tab-local').classList.toggle('active', m === 'local');
+    document.getElementById('tab-cloud').classList.toggle('active', m === 'cloud');
+    const dot  = document.getElementById('status-dot');
+    const txt  = document.getElementById('status-text');
+    if (m === 'local') {
+      dot.className = 'status-dot online';
+      txt.textContent = 'T-Ai 1.0 — in esecuzione';
+    } else {
+      dot.className = 'status-dot online';
+      txt.textContent = 'Cloud API — attiva';
+    }
+  }
+
+  // ─── HELPERS ──────────────────────────────────────────────
+  function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 180) + 'px'; }
+  function handleKey(e)  { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!sendBtn.disabled) send(); } }
+  function suggest(el)   { input.value = el.textContent; input.focus(); sendBtn.disabled = false; }
+  function scrollBot()   { messagesEl.scrollTop = messagesEl.scrollHeight; }
+
+  function newChat() {
+    history = [];
+    msgsInner.querySelectorAll('.msg-row').forEach(r => r.remove());
+    welcome.style.display = '';
+    typing.classList.remove('on');
+  }
+
+  // ─── APPEND MESSAGE ───────────────────────────────────────
+  const USER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="26" height="26" shape-rendering="crispEdges">
+    <rect x="5" y="1" width="6" height="6" fill="#f5c5a3"/>
+    <rect x="6" y="3" width="1" height="1" fill="#2a1a0e"/><rect x="9" y="3" width="1" height="1" fill="#2a1a0e"/>
+    <rect x="7" y="5" width="2" height="1" fill="#c07050"/>
+    <rect x="5" y="1" width="6" height="2" fill="#5c3d1e"/>
+    <rect x="4" y="2" width="1" height="3" fill="#5c3d1e"/><rect x="11" y="2" width="1" height="3" fill="#5c3d1e"/>
+    <rect x="4" y="7" width="8" height="5" fill="#7c6af7"/>
+    <rect x="7" y="7" width="2" height="2" fill="#f5c5a3"/>
+    <rect x="2" y="7" width="2" height="4" fill="#7c6af7"/><rect x="12" y="7" width="2" height="4" fill="#7c6af7"/>
+    <rect x="2" y="11" width="2" height="2" fill="#f5c5a3"/><rect x="12" y="11" width="2" height="2" fill="#f5c5a3"/>
+    <rect x="4" y="12" width="3" height="3" fill="#3b3b8c"/><rect x="9" y="12" width="3" height="3" fill="#3b3b8c"/>
+    <rect x="3" y="14" width="4" height="2" fill="#111"/><rect x="9" y="14" width="4" height="2" fill="#111"/>
+  </svg>`;
+
+  function appendMsg(role, text) {
+    welcome.style.display = 'none';
+    const row  = document.createElement('div');
+    row.className = 'msg-row';
+
+    const hd   = document.createElement('div');
+    hd.className = 'msg-hd';
+
+    const av   = document.createElement('div');
+    av.className = `msg-av ${role === 'user' ? 'user' : 'tai'}`;
+    if (role === 'user') av.innerHTML = USER_SVG;
+    else av.textContent = 'T';
+
+    const nm   = document.createElement('span');
+    nm.className = 'msg-nm';
+    if (role === 'user') {
+      nm.textContent = 'Tu';
+    } else {
+      nm.innerHTML = 'T-Ai <span class="msg-model-tag">1.0</span>';
+    }
+
+    hd.appendChild(av);
+    hd.appendChild(nm);
+
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    body.textContent = text;
+
+    row.appendChild(hd);
+    row.appendChild(body);
+    msgsInner.insertBefore(row, typing);
+    scrollBot();
+  }
+
+  // ─── SEND ─────────────────────────────────────────────────
+  async function send() {
+    const text = input.value.trim();
+    if (!text || busy) return;
+    input.value = ''; input.style.height = 'auto';
+    sendBtn.disabled = true; busy = true;
+
+    appendMsg('user', text);
+    history.push({ role: 'user', content: text });
+    typing.classList.add('on');
+    scrollBot();
+
+    let reply = '';
+    try {
+      if (mode === 'local') {
+        // Chiama il server Python locale
+        const url = document.getElementById('local-url').value.trim();
+        const res = await fetch(`${url}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, history }),
+        });
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
+        const data = await res.json();
+        reply = data.reply || '⚠️ Nessuna risposta.';
+
+      } else {
+        // Modalità cloud — usa Claude come default
+        const apiKey = document.getElementById('key-claude').value.trim();
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1000,
+            system: 'Sei T-Ai 1.0, un assistente AI preciso e utile. Rispondi in italiano.',
+            messages: history,
+          }),
+        });
+        const data = await res.json();
+        reply = data.content?.[0]?.text || '⚠️ Nessuna risposta.';
+      }
+    } catch (err) {
+      if (mode === 'local') {
+        reply = '⚠️ Server locale non raggiungibile.\nAssicurati di aver avviato: python t_ai_server.py';
+      } else {
+        reply = `⚠️ Errore: ${err.message}`;
+      }
+    }
+
+    typing.classList.remove('on');
+    appendMsg('assistant', reply);
+    history.push({ role: 'assistant', content: reply });
+    busy = false;
+    sendBtn.disabled = !input.value.trim();
+  }
+</script>
+</body>
+</html>
